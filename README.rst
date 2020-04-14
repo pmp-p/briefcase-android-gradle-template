@@ -16,7 +16,7 @@ The master branch of this repository has no content; there is an independent
 branch for each supported version of Python. The following Python versions are
 supported:
 
-* `Python 3.8 <https://github.com/pmp-p/briefcase-android-gradle-template/tree/3.8p>`__
+* `Python 3.8 PyDK <https://github.com/pmp-p/briefcase-android-gradle-template/tree/3.8p>`__
 
 
 usage:
