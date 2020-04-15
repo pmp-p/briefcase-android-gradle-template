@@ -37,7 +37,7 @@ replay_dir: replay
 END
 
 
-cat > templates/briefcase-android-gradle-template/cookiecutter.json <<END
+cat > templates/cookiecutter.json <<END
 {
   "module_name": "empty",
   "bundle": "org.beerware",
@@ -55,3 +55,4 @@ cat > templates/briefcase-android-gradle-template/cookiecutter.json <<END
 END
 
 cookiecutter https://github.com/pmp-p/briefcase-android-gradle-template --checkout 3.8p
+#cookiecutter gh:pmp-p/briefcase-android-gradle-template --checkout 3.8p
