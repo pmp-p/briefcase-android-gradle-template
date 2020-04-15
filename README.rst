@@ -1,5 +1,5 @@
-Briefcase Android Gradle Template
-=================================
+Future Briefcase Android Gradle Template
+========================================
 
 A `Cookiecutter <https://github.com/cookiecutter/cookiecutter/>`__ template for
 building Python apps that will run under Android.
@@ -60,8 +60,6 @@ If you've done this correctly, a project with a formal name of ``My Project``,
 with an app name of ``my-project`` should have a directory structure that
 looks something like::
 
-
-.
 |-- app
 |   |-- build.gradle
 |   |-- build.gradle.minimal
@@ -85,7 +83,6 @@ looks something like::
 |           |       |-- JniHandler.java
 |           |       `-- MainActivity.java
 |           `-- res
-|               |-- [...]
 |-- assets
 |   |-- Applications
 |   |   `-- README
@@ -100,8 +97,7 @@ looks something like::
 |-- gradle.properties
 |-- gradlew
 |-- gradlew.bat
-`-- settings.gradle
-
+|-- settings.gradle
 
 
 You're now ready to run build and run your project! Set
