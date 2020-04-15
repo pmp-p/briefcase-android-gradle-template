@@ -24,12 +24,17 @@ However, if you *do* want use this template directly...
 
 2. Run ``cookiecutter`` on the template::
 
-    $ cookiecutter https://github.com/pmp-p/briefcase-android-gradle-template --checkout 3.8p
+    $ cookiecutter https://github.com/pmp-p/pydk-android-gradle-template --checkout 3.8p
+
+    module_name [empty]: 
+    bundle [org.beerware]: 
+    app_name [EmptyApp]:
+    formal_name [org.beerware.empty]:
 
    This will ask you for a number of details of your application, including the
-   `name` of your application (which should be a valid PyPI identifier), and
+   `app_name` of your application (which appears under icons and app settings), and
    the `Formal Name` of your application (the full name you use to describe
-   your app). The remainder of these instructions will assume a `name` of
+   your app in your workspace). The remainder of these instructions will assume a `name` of
    ``my-project``, and a formal name of ``My Project``.
 
 3. `Download the Python support package for Android`_, and extract it into
@@ -55,33 +60,49 @@ If you've done this correctly, a project with a formal name of ``My Project``,
 with an app name of ``my-project`` should have a directory structure that
 looks something like::
 
-    My Project/
-        app/
-            src/
-                main/
-                    assets/
-                        python/
-                            app/
-                                my_project/
-                                    __init__.py
-                                    __main__.py (declares IPythonApp)
-                            app_packages/
-                                ...
-                cpp/
-                    ...
-                java/
-                    ...
-                res/
-                    ...
-                AndroidManifest.xml
-            build.gradle
-            proguard-rules.pro
-        briefcase.toml
-        build.gradle
-        gradle.properties
-        gradlew
-        gradlew.bat
-        settings.gradle
+
+.
+|-- app
+|   |-- build.gradle
+|   |-- build.gradle.minimal
+|   |-- proguard-rules.pro
+|   `-- src
+|       `-- main
+|           |-- AndroidManifest.xml
+|           |-- cpp
+|           |   |-- CMakeLists.txt
+|           |   |-- ioredir.c
+|           |   |-- logger.h
+|           |   |-- mod_egl.c
+|           |   |-- mod_egl.cpp
+|           |   |-- mod_egl.h
+|           |   |-- mod_embed.c
+|           |   |-- pythonsupport.c
+|           |   `-- rmipython.c
+|           |-- java
+|           |   |-- org.beerware.EmptyApp
+|           |       |-- JavaSpace.java
+|           |       |-- JniHandler.java
+|           |       `-- MainActivity.java
+|           `-- res
+|               |-- [...]
+|-- assets
+|   |-- Applications
+|   |   `-- README
+|   `-- packages
+|       `-- README
+|-- briefcase.toml
+|-- build.gradle
+|-- gradle
+|   `-- wrapper
+|       |-- gradle-wrapper.jar
+|       `-- gradle-wrapper.properties
+|-- gradle.properties
+|-- gradlew
+|-- gradlew.bat
+`-- settings.gradle
+
+
 
 You're now ready to run build and run your project! Set
 
