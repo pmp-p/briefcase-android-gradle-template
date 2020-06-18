@@ -37,6 +37,15 @@ set_target_properties(ssl PROPERTIES IMPORTED_LOCATION ${PREBUILT}/libsslpython.
 add_library(crypto SHARED IMPORTED )
 set_target_properties(crypto PROPERTIES IMPORTED_LOCATION ${PREBUILT}/libcryptopython.so)
 
+add_library(lzma SHARED IMPORTED )
+set_target_properties(lzma PROPERTIES IMPORTED_LOCATION ${PREBUILT}/liblzma.so)
+
+add_library(BZ2 SHARED IMPORTED )
+set_target_properties(BZ2 PROPERTIES IMPORTED_LOCATION ${PREBUILT}/libbz2.so)
+
+add_library(ffi SHARED IMPORTED )
+set_target_properties(ffi PROPERTIES IMPORTED_LOCATION ${PREBUILT}/libffi.so)
+
 add_library(brokenthings SHARED IMPORTED )
 set_target_properties(brokenthings PROPERTIES IMPORTED_LOCATION ${PREBUILT}/libbrokenthings.so)
 
@@ -50,6 +59,9 @@ target_link_libraries(rmipython
                     android
                     log
                     z
+                    lzma
+                    BZ2
+                    ffi
                     ssl
                     c++_shared
                     crypto

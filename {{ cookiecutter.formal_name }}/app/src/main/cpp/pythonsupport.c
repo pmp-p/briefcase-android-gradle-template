@@ -271,6 +271,8 @@ Java_{{ cookiecutter.bundle|replace('.', '_') }}_{{ cookiecutter.module_name }}_
             token = strtok(NULL, "/");
         }
 
+        setenv("PYTHONOPTIMIZE","No",1);
+
         setenv("PYTHONDONTWRITEBYTECODE","1",1);
 
         snprintf(cstr, sizeof(cstr), "%s/usr", apk_home );
@@ -338,13 +340,6 @@ Java_{{ cookiecutter.bundle|replace('.', '_') }}_{{ cookiecutter.module_name }}_
     return (*env)->NewStringUTF(env, cstr);
 }
 
-
-
-JNIEXPORT void JNICALL
-Java_{{ cookiecutter.bundle|replace('.', '_') }}_{{ cookiecutter.module_name }}_MainActivity_PyLoop(JNIEnv *env, jobject instance) {
-    PyRun_SimpleString("Applications.onStep(Applications)");
-}
-
 /*
  * Main working thread function. From a pthread,
  *     calling back to MainActivity::updateTimer() to display ticks on UI
@@ -380,8 +375,6 @@ VMthread(void* context) {
         PyEval_InitThreads();
 
         PY_Initialized = 1;
-
-        //LOG_V("crossing Rubicon ...");
 
         PyRun_SimpleString("import python3");
 
@@ -435,10 +428,10 @@ VMthread(void* context) {
                 //rd_step();
             }
             //Java_{{ cookiecutter.bundle|replace('.', '_') }}_{{ cookiecutter.module_name }}_MainActivity_PyLoop
-            PyRun_SimpleString("Applications.onStep(Applications)");
+            PyRun_SimpleString("python3.on_step(Applications,python3)");
         } else
             // to create windows :D
-            PyRun_SimpleString("Applications.onStep(Applications)");
+            PyRun_SimpleString("python3.on_step(Applications,python3)");
 
         (*env)->CallVoidMethod(env, pctx->mainActivityObj, timerId);
 

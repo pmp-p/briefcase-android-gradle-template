@@ -60,23 +60,69 @@ import com.google.gson.Gson;
 import com.google.gson.reflect.TypeToken;
 
 
-import android.view.SurfaceHolder;
-//import android.view.SurfaceView;
-import android.view.Surface;
 
 import android.app.ActivityManager;
 import android.content.pm.ConfigurationInfo;
 
+// ------------------- a surface for jni libs ------------------------------
+//inputs
+import android.view.KeyEvent ;
+import android.view.MotionEvent;
+
+//display
+import android.view.Surface;
+//import android.view.SurfaceView;
+import android.view.SurfaceHolder;
+
 class
 Window extends android.view.SurfaceView implements SurfaceHolder.Callback
 {
-    public Window(Context context) {
-        super(context);
-        Log.d(MainActivity.TAG, "Window");
+    private MainActivity _host = null;
+
+    public Window(MainActivity host) {
+        super((Context) host);
+        _host = host;
+
+        Log.d(MainActivity.TAG, "open_Window");
         SurfaceHolder holder = getHolder();
         holder.addCallback(this);
-//DEPRECATED        holder.setType(SurfaceHolder.SURFACE_TYPE_PUSH_BUFFERS);
+
+        this.setId(999);
+        this.setOnClickListener( _host );
+
+        this.setOnHoverListener(new View.OnHoverListener() {
+            @Override
+            public boolean onHover(View v, MotionEvent event) {
+                String etype = "over";
+                switch (event.getAction()) {
+                    case MotionEvent.ACTION_HOVER_MOVE:
+                        break;
+
+                    case MotionEvent.ACTION_HOVER_ENTER:
+                        etype = "enter";
+                        _host.input_grabbed = true;
+                        break;
+
+                    case MotionEvent.ACTION_HOVER_EXIT:
+                        etype = "leave";
+                        _host.input_grabbed = false;
+                        break;
+                }
+/*
+                if (etype.equals("over"))
+                {}
+                else
+                    Log.i(MainActivity.TAG, event.getX() +" "+ etype +" "+ event.getY()+ " on " + _host);
+                */
+                _host.App("onmouse", etype, event.getX(), event.getY() );
+                return false;
+            }
+        });
+
+//DEPRECATED
+ //    holder.setType(SurfaceHolder.SURFACE_TYPE_PUSH_BUFFERS);
     }
+
 
     @Override
     public void surfaceCreated(SurfaceHolder holder) {
@@ -96,17 +142,23 @@ Window extends android.view.SurfaceView implements SurfaceHolder.Callback
         MainActivity.nativeSetSurface(null);
     }
 
+
+
+
 }
 
+//https://developer.android.com/reference/android/view/KeyEvent
+
+
+// ----------------------- an empty application ---------------------------------
 
 public class
 MainActivity extends AppCompatActivity implements View.OnClickListener
-//, SurfaceHolder.Callback
 {
     public static final String PYTHON = "python3.8";
     public static final String TAG = "{{ cookiecutter.bundle }}";
     //g4 private static final String APPLICATION_ID = BuildConfig.APPLICATION_ID;
-    private static final String onuithread = "Applications.dispatch('[\"onUiThread\", \"\"]')";
+    private static final String onuithread = "python3.dispatch('[\"onui\", \"\"]')";
 
     private static String HOME;
     private static String APK;
@@ -129,6 +181,7 @@ MainActivity extends AppCompatActivity implements View.OnClickListener
     }
 
 //============================================================
+
     public static native void nativeSetSurface(Surface jsurface);
 
     // things hard to do yet from Python or C
@@ -146,11 +199,9 @@ MainActivity extends AppCompatActivity implements View.OnClickListener
         } else {
             Log.i(MainActivity.TAG," == Fallback to GL/ES 1.0 ==");
         }
-        Window sv = new Window(this);
-        //sv.getHolder().addCallback(this);
-        sv.setId(666);
-        sv.setOnClickListener( this );
-        return sv;
+        //Window sv = ;
+
+        return new Window(this); //, this);
     }
 
     // input events
@@ -159,16 +210,158 @@ MainActivity extends AppCompatActivity implements View.OnClickListener
     public void onClick(View v) {
       // default method for handling onClick Events..
         Log.v(MainActivity.TAG, "onClick :" + v.getId());
-        App("onEvent", v.getId() );
+        App("on_event", v.getId() );
     }
+
+    public static boolean input_accept = true;
+    public static boolean input_grabbed = false;
+
+    private static final int INVALID_POINTER_ID = -1;
+    private int pointer_id = INVALID_POINTER_ID;
+
+
+    @Override
+    public boolean onKeyDown(int keyCode, final KeyEvent event) {
+
+        if (input_grabbed) {
+            Log.i(MainActivity.TAG, String.format("GRAB key Down %d %b", keyCode, input_grabbed));
+            return true;
+        }
+        Log.i(MainActivity.TAG, String.format("PASS key Down %d %b", keyCode, input_grabbed));
+        /*
+        if (input_accept && nativeKey(keyCode, 1, event.getUnicodeChar())) {
+            return true;
+        } else {
+            return super.onKeyDown(keyCode, event);
+        }
+        */
+        return super.onKeyDown(keyCode, event);
+    }
+
+    @Override
+    public boolean onKeyUp(int keyCode, final KeyEvent event) {
+
+
+        if (input_grabbed) {
+            Log.i(MainActivity.TAG, String.format("GRAB key UP   %d %b", keyCode, input_grabbed));
+            return true;
+        }
+
+        // block escape in games
+        if ( (keyCode==4) && input_grabbed )
+            return false;
+
+        Log.i(MainActivity.TAG, String.format("PASS key UP   %d %b", keyCode, input_grabbed));
+
+        /*
+        if (input_accept && nativeKey(keyCode, 0, event.getUnicodeChar())) {
+            return true;
+        } else {
+            return super.onKeyUp(keyCode, event);
+        }
+        */
+        return super.onKeyUp(keyCode, event);
+    }
+
+   // @Override
+    public boolean onFling(MotionEvent e1, MotionEvent e2, float velocityX, float velocityY) {
+        Log.i(MainActivity.TAG, "fling");
+        //scroller.fling(currentX, currentY, velocityX / SCALE, velocityY / SCALE, minX, minY, maxX, maxY);
+        //postInvalidate();
+        return true;
+    }
+
+    @Override
+    public boolean onTouchEvent(final MotionEvent event) {
+        int action = event.getAction() & MotionEvent.ACTION_MASK;
+        int sdlAction = -1;
+        int pointerId = -1;
+        int pointerIndex = -1;
+
+        switch ( action ) {
+            case MotionEvent.ACTION_DOWN:
+            case MotionEvent.ACTION_POINTER_DOWN:
+                sdlAction = 0;
+                break;
+            case MotionEvent.ACTION_MOVE:
+                sdlAction = 2;
+                break;
+            case MotionEvent.ACTION_UP:
+            case MotionEvent.ACTION_POINTER_UP:
+                sdlAction = 1;
+                break;
+        }
+
+
+        for ( int i = 0; i < event.getPointerCount(); i++ ) {
+            Log.i(MainActivity.TAG, String.format("mouse id=%d action=%d x=%f y=%f",
+                    event.getPointerId(i),
+                    sdlAction,
+                    event.getX(i),
+                    event.getY(i)
+            ));
+        }
+
+        if (input_accept == false)
+            return true;
+
+
+
+        // http://android-developers.blogspot.com/2010/06/making-sense-of-multitouch.html
+        switch ( action  & MotionEvent.ACTION_MASK ) {
+            case MotionEvent.ACTION_DOWN:
+            case MotionEvent.ACTION_MOVE:
+            case MotionEvent.ACTION_UP:
+                pointerIndex = event.findPointerIndex(pointer_id);
+                break;
+            case MotionEvent.ACTION_POINTER_DOWN:
+            case MotionEvent.ACTION_POINTER_UP:
+                pointerIndex = (event.getAction() & MotionEvent.ACTION_POINTER_INDEX_MASK)
+                    >> MotionEvent.ACTION_POINTER_INDEX_SHIFT;
+                if ( action == MotionEvent.ACTION_POINTER_UP ) {
+                    pointerId = event.getPointerId(pointerIndex);
+                    if ( pointerId == pointer_id )
+                        pointer_id = event.getPointerId(pointerIndex == 0 ? 1 : 0);
+                }
+                break;
+        }
+
+        if ( sdlAction >= 0 ) {
+
+            for ( int i = 0; i < event.getPointerCount(); i++ ) {
+
+                if ( pointerIndex == -1 || pointerIndex == i ) {
+
+
+                    /*
+                    SDLSurfaceView.nativeMouse(
+                            (int)event.getX(i),
+                            (int)event.getY(i),
+                            sdlAction,
+                            event.getPointerId(i),
+                            (int)(event.getPressure(i) * 1000.0),
+                            (int)(event.getSize(i) * 1000.0));
+                    */
+                }
+
+            }
+
+        }
+
+        return true;
+    };
+
+
+
+
+
+
 
 // ===========================================================
 
     public native String stringFromJNI();
 
     public static native String PyRun(String jstring_code);
-
-    public static native void PyLoop();
 
     public static int jobs_processing = 0;
     public ArrayList<String> outq;
@@ -288,7 +481,7 @@ MainActivity extends AppCompatActivity implements View.OnClickListener
             android.util.Log.i(MainActivity.TAG, "Events java->python");
 
             while ( appq.size()>0 ) {
-                PyRun("Applications.dispatch("+appq.remove(0)+")");
+                PyRun("python3.dispatch("+appq.remove(0)+")");
             }
         }
 
@@ -302,8 +495,6 @@ MainActivity extends AppCompatActivity implements View.OnClickListener
         // not busy ? time to do ui stuff
 
         MainActivity.this.py_jobs = PyRun(onuithread);
-
-        //MainActivity.this.py_jobs = App("onUiThread","");
 
         if (MainActivity.__main__ != null) {
             if (MainActivity.this.py_jobs.length()>4)
