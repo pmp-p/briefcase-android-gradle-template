@@ -57,6 +57,15 @@ class JavaSpace {
         return this.ctx;
     }
 
+    public String expose(android.view.View instance) {
+        Integer iid = System.identityHashCode(instance);
+        String cn = instance.getClass().getName();
+        String key =  "p:" + cn + ":" + Integer.toHexString(iid);
+        Log.e(TAG,"62: exposing " + key +" was " + instance.getId()  );
+        instance.setId(iid);
+        this.ctx.mem.put(key, instance );
+        return key;
+    }
 
     // "ffi" like approach
 
@@ -65,7 +74,7 @@ class JavaSpace {
     // s/i/f/d/p etc ...
     // then next it will use boxed pointers from stack and object's classname for resolution.
 
-    private Class get_target(String cname,Object instance) {
+    private Class get_target(String cname, Object instance) {
         if (cname.length()>0)
             try {
                 return Class.forName(cname);

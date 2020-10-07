@@ -14,7 +14,8 @@ set(ROOT  ${CMAKE_SOURCE_DIR}/../../../..)
 
 set(ASSETS ${ROOT}/assets)
 set(PREBUILT ${ROOT}/prebuilt/${ANDROID_NDK_ABI_NAME})
-set(PREINC ${ROOT}/prebuilt/${ANDROID_NDK_ABI_NAME}/include)
+#set(PREINC ${ROOT}/prebuilt/${ANDROID_NDK_ABI_NAME}/include)
+set(PREINC ${ROOT}/aosp/apkroot-${ANDROID_NDK_ABI_NAME}/usr/include)
 
 
 # copy arch dependant libs

@@ -71,11 +71,19 @@ import android.view.MotionEvent;
 
 //display
 import android.view.Surface;
+
 //import android.view.SurfaceView;
 import android.view.SurfaceHolder;
 
-class
-Window extends android.view.SurfaceView implements SurfaceHolder.Callback
+
+// ==================================================================
+
+class Window
+
+extends android.view.SurfaceView
+
+implements SurfaceHolder.Callback
+
 {
     private MainActivity _host = null;
 
@@ -83,44 +91,10 @@ Window extends android.view.SurfaceView implements SurfaceHolder.Callback
         super((Context) host);
         _host = host;
 
-        Log.d(MainActivity.TAG, "open_Window");
-        SurfaceHolder holder = getHolder();
-        holder.addCallback(this);
+        getHolder().addCallback(this);
 
-        this.setId(999);
-        this.setOnClickListener( _host );
+        this.setOnHoverListener( _host );
 
-        this.setOnHoverListener(new View.OnHoverListener() {
-            @Override
-            public boolean onHover(View v, MotionEvent event) {
-                String etype = "over";
-                switch (event.getAction()) {
-                    case MotionEvent.ACTION_HOVER_MOVE:
-                        break;
-
-                    case MotionEvent.ACTION_HOVER_ENTER:
-                        etype = "enter";
-                        _host.input_grabbed = true;
-                        break;
-
-                    case MotionEvent.ACTION_HOVER_EXIT:
-                        etype = "leave";
-                        _host.input_grabbed = false;
-                        break;
-                }
-/*
-                if (etype.equals("over"))
-                {}
-                else
-                    Log.i(MainActivity.TAG, event.getX() +" "+ etype +" "+ event.getY()+ " on " + _host);
-                */
-                _host.App("onmouse", etype, event.getX(), event.getY() );
-                return false;
-            }
-        });
-
-//DEPRECATED
- //    holder.setType(SurfaceHolder.SURFACE_TYPE_PUSH_BUFFERS);
     }
 
 
@@ -142,22 +116,24 @@ Window extends android.view.SurfaceView implements SurfaceHolder.Callback
         MainActivity.nativeSetSurface(null);
     }
 
-
-
-
 }
+
+
 
 //https://developer.android.com/reference/android/view/KeyEvent
 
 
 // ----------------------- an empty application ---------------------------------
 
-public class
-MainActivity extends AppCompatActivity implements View.OnClickListener
+public class MainActivity
+
+extends AppCompatActivity //, android.view.View
+
+implements View.OnClickListener, View.OnHoverListener
+
 {
     public static final String PYTHON = "python3.8";
     public static final String TAG = "{{ cookiecutter.bundle }}";
-    //g4 private static final String APPLICATION_ID = BuildConfig.APPLICATION_ID;
     private static final String onuithread = "python3.dispatch('[\"onui\", \"\"]')";
 
     private static String HOME;
@@ -199,12 +175,40 @@ MainActivity extends AppCompatActivity implements View.OnClickListener
         } else {
             Log.i(MainActivity.TAG," == Fallback to GL/ES 1.0 ==");
         }
-        //Window sv = ;
-
-        return new Window(this); //, this);
+        Window nwin = new Window(this);
+        jspy.expose(nwin);
+        return nwin;
     }
 
-    // input events
+    // =============== input and motion  events  ===============================
+    public static boolean input_accept = true;
+    public static boolean input_grabbed = false;
+
+
+    @Override
+    public boolean onHover(View v, MotionEvent event) {
+        String etype = "over";
+        switch (event.getAction()) {
+            case MotionEvent.ACTION_HOVER_MOVE:
+                break;
+
+            case MotionEvent.ACTION_HOVER_ENTER:
+                etype = "enter";
+                //_host.input_grabbed = true;
+                input_grabbed = true;
+                break;
+
+            case MotionEvent.ACTION_HOVER_EXIT:
+                etype = "leave";
+                input_grabbed = false;
+                //_host.input_grabbed = false;
+                break;
+        }
+
+        App("onmouse", v.getId(), etype, event.getX(), event.getY() );
+        return false;
+    }
+
 
     @Override
     public void onClick(View v) {
@@ -213,8 +217,6 @@ MainActivity extends AppCompatActivity implements View.OnClickListener
         App("on_event", v.getId() );
     }
 
-    public static boolean input_accept = true;
-    public static boolean input_grabbed = false;
 
     private static final int INVALID_POINTER_ID = -1;
     private int pointer_id = INVALID_POINTER_ID;
@@ -279,27 +281,33 @@ MainActivity extends AppCompatActivity implements View.OnClickListener
         int pointerIndex = -1;
 
         switch ( action ) {
+            case MotionEvent.ACTION_MOVE:
+                sdlAction = 2;
+                break;
+
             case MotionEvent.ACTION_DOWN:
             case MotionEvent.ACTION_POINTER_DOWN:
                 sdlAction = 0;
                 break;
-            case MotionEvent.ACTION_MOVE:
-                sdlAction = 2;
-                break;
+
             case MotionEvent.ACTION_UP:
             case MotionEvent.ACTION_POINTER_UP:
                 sdlAction = 1;
+
                 break;
         }
 
 
         for ( int i = 0; i < event.getPointerCount(); i++ ) {
-            Log.i(MainActivity.TAG, String.format("mouse id=%d action=%d x=%f y=%f",
+            String modata = String.format("{'e':'mouse', 'id':%d, 'action':%d, 'clientX':%f, 'clientY':%f}",
                     event.getPointerId(i),
                     sdlAction,
                     event.getX(i),
                     event.getY(i)
-            ));
+            );
+
+            App("oncursor", modata );
+            //Log.i(MainActivity.TAG, modata);
         }
 
         if (input_accept == false)
@@ -358,6 +366,7 @@ MainActivity extends AppCompatActivity implements View.OnClickListener
 
 
 // ===========================================================
+
 
     public native String stringFromJNI();
 
@@ -422,6 +431,10 @@ MainActivity extends AppCompatActivity implements View.OnClickListener
         setContentView(R.layout.activity_main);
 
 
+        View main = findViewById(android.R.id.content).getRootView() ;
+        main.setId( System.identityHashCode(main) );
+        main.setOnHoverListener( this );
+
         android.widget.RelativeLayout ui;
         ui = (android.widget.RelativeLayout ) findViewById(R.id.Applications);
 
@@ -435,9 +448,11 @@ MainActivity extends AppCompatActivity implements View.OnClickListener
 
         if (ui!=null) {
             __main__ = jspy.new_context(TAG, this, ui);
+            jspy.expose(main);
 
             // a simple test for javaspace
-            jspy.ffi_call("java.lang.System", null, "getProperty" , "java.specification.version");
+            // jspy.ffi_call("java.lang.System", null, "getProperty" , "java.specification.version");
+
 
         }
         Log.v(MainActivity.TAG, " ============== onCreate : Java end ================");

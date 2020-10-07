@@ -202,7 +202,6 @@ extern PyMODINIT_FUNC PyInit__struct();
 JNIEXPORT void JNICALL
 Java_{{ cookiecutter.bundle|replace('.', '_') }}_{{ cookiecutter.module_name }}_MainActivity_jnionCreate(JNIEnv *env, jobject instance, jstring jstring_tag,jstring jstring_ver, jstring jstring_apk, jstring jstring_lib, jstring jstring_home) {
     if (!PY_Initialized) {
-        LOG_W(" ============== onCreate : C Begin ================");
 
         // set global apk logging tag
         LOG_TAG = (*env)->GetStringUTFChars( env, jstring_tag, NULL ) ;
@@ -210,10 +209,12 @@ Java_{{ cookiecutter.bundle|replace('.', '_') }}_{{ cookiecutter.module_name }}_
         // log a full term reset, to get cursor home and see clean app startup
         // also empty terminal app buffers could be usefull for long session with unlimited scrollback on.
         if ( sizeof(cstr) > sizeof(term_reset))
-            memcpy(&cstr[0],&term_reset[0], sizeof(term_reset));
+            memcpy(&cstr[0], &term_reset[0], sizeof(term_reset));
 
-        LOG(LOG_TAG,cstr);
+        LOG(LOG_TAG, cstr);
 #endif
+        LOG(LOG_TAG, " ============== onCreate : C Begin ================");
+
         // python version lib name, to use directly python3.? folders found in prefix/lib
         const char *python  =  (*env)->GetStringUTFChars( env, jstring_ver , NULL ) ;
         // stdlib archive path (apk==zip)
@@ -265,21 +266,22 @@ Java_{{ cookiecutter.bundle|replace('.', '_') }}_{{ cookiecutter.module_name }}_
         setenv("USER", LOG_TAG, 1);
 
         snprintf(cstr, sizeof(cstr), "%s", apk_home );
+
         char* token = strtok(cstr, "/");
         while (token != NULL) {
             setenv("USERNAME", token, 1);
             token = strtok(NULL, "/");
         }
 
-        setenv("PYTHONOPTIMIZE","No",1);
+        setenv("PYTHONOPTIMIZE", "No",1);
 
-        setenv("PYTHONDONTWRITEBYTECODE","1",1);
+        setenv("PYTHONDONTWRITEBYTECODE", "1", 1);
 
         snprintf(cstr, sizeof(cstr), "%s/usr", apk_home );
         setenv("PYTHONHOME", cstr, 1);
 
-        setenv("PYTHONCOERCECLOCALE","1",1);
-        setenv("PYTHONUNBUFFERED","1",1);
+        setenv("PYTHONCOERCECLOCALE", "1", 1);
+        setenv("PYTHONUNBUFFERED", "1", 1);
 
         // TODO: pip binary modules
         // TODO: PYTHONPYCACHEPREFIX
@@ -349,7 +351,6 @@ void*
 VMthread(void* context) {
 
 
-
     TickContext *pctx = (TickContext*) context;
     JavaVM *javaVM = pctx->javaVM;
     JNIEnv *env;
@@ -376,7 +377,9 @@ VMthread(void* context) {
 
         PY_Initialized = 1;
 
-        PyRun_SimpleString("import python3");
+        LOG_V("Initializing pythons ...");
+
+        PyRun_SimpleString("import pythons");
 
         do_flush_stdout();
 //--------------------------------------------
@@ -423,15 +426,11 @@ VMthread(void* context) {
         if (window) {
             if (!init_egl_done) {
                 rd_init( window, 1);
-                //xmit(getEGLDisplay(), getEGLSurface(), getEGLContext(), 0);
                 init_egl_done=1;
-                //rd_step();
             }
-            //Java_{{ cookiecutter.bundle|replace('.', '_') }}_{{ cookiecutter.module_name }}_MainActivity_PyLoop
-            PyRun_SimpleString("python3.on_step(Applications,python3)");
-        } else
-            // to create windows :D
-            PyRun_SimpleString("python3.on_step(Applications,python3)");
+        }
+
+        PyRun_SimpleString("python3.on_step(Applications, python3)");
 
         (*env)->CallVoidMethod(env, pctx->mainActivityObj, timerId);
 
