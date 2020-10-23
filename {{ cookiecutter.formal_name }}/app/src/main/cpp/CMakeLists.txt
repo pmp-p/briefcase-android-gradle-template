@@ -26,11 +26,11 @@ set(PREINC ${ROOT}/aosp/apkroot-${ANDROID_NDK_ABI_NAME}/usr/include)
 
 message(">>>>>>>>>> ${PREINC}/${PYTHON} <<<<<<<<<<<<<")
 
-include_directories(${PREINC} ${PREINC}/${PYTHON} ${CMAKE_SOURCE_DIR}/Include)
+include_directories(${PREINC} ${PREINC}/${PYTHON} ${CMAKE_SOURCE_DIR} ${CMAKE_SOURCE_DIR}/include)
 
 file(GLOB ${CMAKE_SOURCE_DIR}/*/*.c)
 
-add_library(rmipython SHARED rmipython.c mod_egl.cpp)
+add_library(rmipython SHARED rmipython.c cpy-aosp/mod_egl.cpp)
 
 add_library(ssl SHARED IMPORTED )
 set_target_properties(ssl PROPERTIES IMPORTED_LOCATION ${PREBUILT}/libsslpython.so)

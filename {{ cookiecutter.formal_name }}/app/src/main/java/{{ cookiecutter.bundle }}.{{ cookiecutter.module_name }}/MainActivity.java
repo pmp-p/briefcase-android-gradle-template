@@ -25,7 +25,10 @@ import androidx.annotation.Keep;
 import androidx.appcompat.app.AppCompatActivity;
 
 import android.os.Bundle;
+//import android.os.Build;
 import android.view.View;
+//import java.util.Locale;
+
 
 //implementation 'androidx.constraintlayout:constraintlayout:1.1.3'
 //import androidx.constraintlayout.widget.ConstraintLayout ;
@@ -127,7 +130,7 @@ implements SurfaceHolder.Callback
 
 public class MainActivity
 
-extends AppCompatActivity //, android.view.View
+extends AppCompatActivity
 
 implements View.OnClickListener, View.OnHoverListener
 
@@ -158,9 +161,11 @@ implements View.OnClickListener, View.OnHoverListener
 
 //============================================================
 
+    // things hard to do yet from Python or C
+
     public static native void nativeSetSurface(Surface jsurface);
 
-    // things hard to do yet from Python or C
+
 
     // GLES surface
     private boolean hasGLES20() {
@@ -169,15 +174,75 @@ implements View.OnClickListener, View.OnHoverListener
         return info.reqGlEsVersion >= 0x20000;
     }
 
+    java.util.Locale getCurrentLocale(Context context){
+        if (android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.N){
+            return context.getResources().getConfiguration().getLocales().get(0);
+        } else{
+            //deprecated
+            return context.getResources().getConfiguration().locale;
+        }
+    }
+
+/*
+https://stackoverflow.com/questions/35789693/android-get-device-country-code
+
+private static String getDeviceCountryCode(Context context) {
+    String countryCode;
+
+    // try to get country code from TelephonyManager service
+    TelephonyManager tm = (TelephonyManager) context.getSystemService(Context.TELEPHONY_SERVICE);
+    if(tm != null) {
+        // query first getSimCountryIso()
+        countryCode = tm.getSimCountryIso();
+        if (countryCode != null && countryCode.length() == 2)
+            return countryCode.toLowerCase();
+
+        if (tm.getPhoneType() == TelephonyManager.PHONE_TYPE_CDMA) {
+            // special case for CDMA Devices
+            countryCode = getCDMACountryIso();
+        } else {
+            // for 3G devices (with SIM) query getNetworkCountryIso()
+            countryCode = tm.getNetworkCountryIso();
+        }
+
+        if (countryCode != null && countryCode.length() == 2)
+            return countryCode.toLowerCase();
+    }
+
+    // if network country not available (tablets maybe), get country code from Locale class
+    if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.N) {
+        countryCode = context.getResources().getConfiguration().getLocales().get(0).getCountry();
+    } else {
+        countryCode = context.getResources().getConfiguration().locale.getCountry();
+    }
+
+    if (countryCode != null && countryCode.length() == 2)
+        return  countryCode.toLowerCase();
+
+    // general fallback to "us"
+    return "us";
+}
+*/
+
     public Window make_window() {
         if (hasGLES20() ){
             Log.i(MainActivity.TAG," == GL/ES 2.0 avail ==");
         } else {
             Log.i(MainActivity.TAG," == Fallback to GL/ES 1.0 ==");
         }
+
+
         Window nwin = new Window(this);
         jspy.expose(nwin);
         return nwin;
+    }
+
+    public int get_x(View view) {
+        return (int)view.getX();
+    }
+
+    public int get_y(View view) {
+        return (int)view.getY();
     }
 
     // =============== input and motion  events  ===============================
@@ -205,7 +270,7 @@ implements View.OnClickListener, View.OnHoverListener
                 break;
         }
 
-        App("onmouse", v.getId(), etype, event.getX(), event.getY() );
+        App("onmouse", v.getId(), etype, (int)event.getX(), (int)event.getY() );
         return false;
     }
 
@@ -297,13 +362,17 @@ implements View.OnClickListener, View.OnHoverListener
                 break;
         }
 
-
         for ( int i = 0; i < event.getPointerCount(); i++ ) {
-            String modata = String.format("{'e':'mouse', 'id':%d, 'action':%d, 'clientX':%f, 'clientY':%f}",
+            int screenX = (int)event.getX(i);
+            int screenY = (int)event.getY(i);
+
+            String modata = String.format(
+                "{'e':'mouse', 'id':%d, 'action':%d," +
+                "'x':%d, 'y':%d,",
                     event.getPointerId(i),
                     sdlAction,
-                    event.getX(i),
-                    event.getY(i)
+                    screenX,
+                    screenY
             );
 
             App("oncursor", modata );
@@ -339,7 +408,6 @@ implements View.OnClickListener, View.OnHoverListener
             for ( int i = 0; i < event.getPointerCount(); i++ ) {
 
                 if ( pointerIndex == -1 || pointerIndex == i ) {
-
 
                     /*
                     SDLSurfaceView.nativeMouse(
@@ -426,6 +494,7 @@ implements View.OnClickListener, View.OnHoverListener
             Log.e(MainActivity.TAG, "cannot locate APK");
         }
 
+
         super.onCreate(savedInstanceState);
 
         setContentView(R.layout.activity_main);
@@ -465,6 +534,7 @@ implements View.OnClickListener, View.OnHoverListener
         hour = minute = second = 0;
         ((android.widget.TextView)findViewById(R.id.hellojniMsg)).setText(stringFromJNI());
         Log.v(MainActivity.TAG, " ============== onResume : Java Begin ================");
+        Log.i(MainActivity.TAG, "JAVA LOCALE : " + getCurrentLocale(getApplicationContext()) );
         VMstart();
         Log.v(MainActivity.TAG, " ============== onResume : Java End ================");
     }
@@ -480,11 +550,9 @@ implements View.OnClickListener, View.OnHoverListener
      */
     @Keep
     private void updateTimer() {
-        //android.util.Log.i(MainActivity.TAG, "AIO PUMP BEGIN");
-
 
         if (outq.size()>0) {
-            android.util.Log.i(MainActivity.TAG, "AIO java->python");
+            //android.util.Log.i(MainActivity.TAG, "AIO java->python");
 
             while ( outq.size()>0 ) {
                 String retjson = outq.remove(0).toString();
@@ -493,7 +561,7 @@ implements View.OnClickListener, View.OnHoverListener
         }
 
         if (appq.size()>0) {
-            android.util.Log.i(MainActivity.TAG, "Events java->python");
+            //android.util.Log.i(MainActivity.TAG, "Events java->python");
 
             while ( appq.size()>0 ) {
                 PyRun("python3.dispatch("+appq.remove(0)+")");
